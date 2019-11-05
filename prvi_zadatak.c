@@ -1,11 +1,5 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <stdbool.h>
+#include "dynArrayOfStr.h"
 
-#include <unistd.h>
-#include <sys/mman.h>
-#include <fcntl.h>
 #define MAX_PKT_SIZE (640*480*4)
 
 #define BLUE 0x001f
@@ -13,9 +7,6 @@
 #define YELLOW 0xffe0
 #define RED 0xf800
 #define GREEN 0x07e0
-
-#define MAX_STR_SIZE 1000
-#define NUM_OF_LINES 5 
 
 void fill(int *error, int x, int y, int color, FILE *fp);
 void fillBgr(int *error, const int color);
@@ -26,10 +17,9 @@ int retColor(const char *argument);
 
 int main(void)
 {
-	int out;
+	int out, line_count;
 	FILE *text_file;
-	const char *path = "/root/RSZES_PrviZadatak/command.txt";
-	char str[MAX_STR_SIZE];
+	const char *path = "/root/slavuj/RSZES_PrviZadatak/command.txt";
 	
 	text_file = fopen(path, "r");
 	if(text_file == NULL) 
@@ -37,43 +27,33 @@ int main(void)
 		printf("Could not open file %s\n",path);
 		return -1;
 	}
+	char **commands = read_lines(text_file, &line_count);
+	fclose(text_file);	
 	int i=0;
-	char commands[NUM_OF_LINES][MAX_STR_SIZE];
-	while(fgets(str,MAX_STR_SIZE, text_file) != NULL)
-	{
-		printf("%d: %s",i, str);
-		strcpy(commands[i], str);
-		++i;
-	}
-	fclose(text_file);
-
-	i = 0;
-	while(i < NUM_OF_LINES && out != -1)
+	while(i<line_count && out != -1)
 	{
 		char arg[6][100] = {{0}};	
-		int j,k, flag[5];
+		int j,k, flag;
 		bool kljuc[6] = {false};
-		for(j=0; j<strlen(commands[i]);++j)
+		for(j=0; j<strlen(commands[i]) ;++j)
 		{
 			if(!kljuc[0] && commands[i][j] != 32)
 				arg[0][j] = commands[i][j];
 			else if(!kljuc[0] && commands[i][j] == 32)
 			{
-				flag[0] = j;
+				flag = j;
 				kljuc[0] = true;
 			}
-			for(k=1; k<5; k++)
+			for(k=1; k<6; k++)
 			{
-				if(kljuc[k-1] && !kljuc[k] && flag[k-1] != j && commands[i][j] != 32)
-					arg[k][j-flag[k-1]-1] = commands[i][j];
-				else if(kljuc[k-1] && !kljuc[k] && flag[k-1] != j && commands[i][j] == 32)
+				if(kljuc[k-1] && !kljuc[k] && flag != j && commands[i][j] != 32)
+					arg[k][j-flag-1] = commands[i][j];
+				else if(kljuc[k-1] && !kljuc[k] && flag != j && commands[i][j] == 32)
 				{
-					flag[k] = j;
+					flag = j;
 					kljuc[k] = true;
 				}
 			}	
-			if(kljuc[4] && !kljuc[5] && flag[4] != j && commands[i][j] != 32 && commands[i][j] != 10)
-				arg[5][j-flag[4]-1] = commands[i][j];
 		}
 		int color;
 		int bckgCmp = strcmp(arg[0], "BCKG:"),
@@ -81,11 +61,10 @@ int main(void)
 		lineVCmp = strcmp(arg[0], "LINE_V:"),
 		rectCmp = strcmp(arg[0], "RECT:");
 	
+		printf("[%d]: %s\n", i, commands[i]);
+
 		if(!bckgCmp)
 		{
-			printf("%s", arg[1]);
-			arg[1][strlen(arg[1])-1] = 0;
-			printf("%s", arg[1]);
 			color = retColor(arg[1]);
 			fillBgr(&out, color);
 		}
@@ -94,7 +73,6 @@ int main(void)
 			int x1 = atoi(arg[1]),
 			x2 = atoi(arg[2]),
 			y  = atoi(arg[3]);
-			arg[4][strlen(arg[4])-1] = 0;
 			color = retColor(arg[4]);
 			fillHorizLine(&out, color, x1, x2, y);	
 		}
@@ -103,7 +81,6 @@ int main(void)
 			int x = atoi(arg[1]),
 			y1 = atoi(arg[2]),
 			y2 = atoi(arg[3]);
-			arg[4][strlen(arg[4])-1] = 0;
 			color = retColor(arg[4]);
 			fillVertLine(&out, color, x, y1, y2);
 		}
@@ -113,7 +90,6 @@ int main(void)
 			x2 = atoi(arg[2]),
 			y1 = atoi(arg[3]),
 			y2 = atoi(arg[4]);
-			arg[5][strlen(arg[5])-1] = 0;
 			color = retColor(arg[5]);
 			fillRectangle(&out, color, x1, x2, y1, y2);	
 		}
@@ -126,6 +102,11 @@ int main(void)
 		usleep(2000000); 
 		++i;
 	}
+	for(i=0; i<line_count; ++i)
+		free(commands[i]);
+	free(commands);
+	commands = NULL;
+
 	return 0;
 }
 
@@ -209,7 +190,6 @@ void fillRectangle(int *error, const int color, const int X1, const int X2, cons
 
 int retColor(const char *argument)
 {
-	printf("%s", argument);
 	int color;
 	int blueCmp = strcmp(argument,"BLUE"), 
 	blackCmp = strcmp(argument, "BLACK"), 
