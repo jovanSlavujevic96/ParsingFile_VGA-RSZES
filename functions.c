@@ -13,8 +13,7 @@
 #define RED 0xf800
 #define GREEN 0x07e0
 
-//#define TextFilePath "/root/slavuj/RSZES_PrviZadatak/command.txt"
-#define TextFilePath "/home/rtrk/RSZES_PrviZadatak/command.txt"
+#define TextFilePath "/root/slavuj/RSZES_PrviZadatak/command.txt"
 
 void loop_cycle(int *out)
 {
@@ -34,12 +33,12 @@ void loop_cycle(int *out)
 	fclose(text_file);
 
 	int i=0;
-	while(i<line_count && *out != -1)
+	while(i<line_count )
 	{
 		char arg[6][100] = {{0}};	
 		int j,k, flag;
 		bool key[6] = {false};
-		for(j=0; j<strlen(commands[i]) ;++j)
+		for(j=0; j<strlen(commands[i])-1 ;++j)
 		{
 			if(!key[0] && commands[i][j] != 32)
 				arg[0][j] = commands[i][j];
@@ -74,6 +73,7 @@ void loop_cycle(int *out)
 			{
 				printf("Error\nThis is not a color you can choose: \"%s\"\nExit\n", arg[1]);
 				*out = -1;
+				break;
 			}
 			fillBgr(out, color);
 		}
@@ -84,15 +84,19 @@ void loop_cycle(int *out)
 				{
 					printf("Error\nThis is not a number: %s\nExit\n", arg[j]);
 					*out = -1;
+					break;
 				}
+			if(*out == -1)
+				break;
 			int x1 = atoi(arg[1]),
 			x2 = atoi(arg[2]),
 			y  = atoi(arg[3]);
 			color = retColor(arg[4]);
 			if(color == -1)
 			{
-				printf("Error\nThis is not a color you can choose: \"%s\"\nExit\n", arg[1]);
+				printf("Error\nThis is not a color you can choose: \"%s\"\nExit\n", arg[4]);
 				*out = -1;
+				break;
 			}
 			fillHorizLine(out, color, x1, x2, y);	
 		}
@@ -103,7 +107,10 @@ void loop_cycle(int *out)
 				{
 					printf("Error\nThis is not a number: %s\nExit\n", arg[j]);
 					*out = -1;
+					break;
 				}
+			if(*out == -1)
+				break;
 			int x = atoi(arg[1]),
 			y1 = atoi(arg[2]),
 			y2 = atoi(arg[3]);
@@ -112,6 +119,7 @@ void loop_cycle(int *out)
 			{
 				printf("Error\nThis is not a color you can choose: \"%s\"\nExit\n", arg[1]);
 				*out = -1;
+				break;
 			}
 			fillVertLine(out, color, x, y1, y2);
 		}
@@ -122,7 +130,10 @@ void loop_cycle(int *out)
 				{
 					printf("Error\nThis is not a number: %s\nExit\n", arg[j]);
 					*out = -1;
+					break;
 				}
+			if(*out == -1)
+				break;
 			int x1 = atoi(arg[1]),
 			x2 = atoi(arg[2]),
 			y1 = atoi(arg[3]),
@@ -140,13 +151,14 @@ void loop_cycle(int *out)
 			printf("Error\nBad command \"%s\"\nExit!\n", arg[0]);
 			*out = -1;
 		}
-		if(*out != -1)
-		{
-			printf("Executed\n");
-			usleep(2000000); //delay 2sec 
-		}
+		if(*out == -1)
+			break;
+
+		printf("Executed\n");
+		usleep(2000000); //delay 2sec 
 		++i;
 	}
+	
 	for(i=0; i<line_count; ++i)
 		free(commands[i]);
 	free(commands);
@@ -155,16 +167,11 @@ void loop_cycle(int *out)
 
 bool checkIfNumber(const char *num_str)
 {
-	int i, true_incr = 0;
+	int i;
 	for(i=0; i<strlen(num_str); ++i)
-	{
-		if(num_str[i] >= 48 && num_str[i] <= 57)
-			++true_incr;
-		if(i == (strlen(num_str)-1) && true_incr == strlen(num_str) )
-			return true;
-		else if(i == (strlen(num_str)-1) && true_incr != strlen(num_str) )
+		if(num_str[i] < 48 || num_str[i] > 57)	
 			return false;
-	}
+	return true;
 }
 
 char** read_lines(FILE* txt, int* count) {
@@ -292,6 +299,6 @@ int retColor(const char *argument)
 	else if(!redCmp) color = RED;
 	else if(!greenCmp) color = GREEN;
 	else color = -1;
-	
+
 	return color;
 }
