@@ -13,7 +13,8 @@
 #define RED 0xf800
 #define GREEN 0x07e0
 
-#define TextFilePath "/root/slavuj/RSZES_PrviZadatak/command.txt"
+//#define TextFilePath "/root/slavuj/RSZES_PrviZadatak/command.txt"
+#define TextFilePath "/home/rtrk/RSZES_PrviZadatak/command.txt"
 
 void loop_cycle(int *out)
 {
@@ -22,7 +23,7 @@ void loop_cycle(int *out)
 	
 	FILE *text_file;
 	int line_count;
-	text_file = fopen(path, "r");
+	text_file = fopen(TextFilePath, "r");
 	if(!text_file) 
 	{
 		printf("Could not open file %s\n",TextFilePath);
@@ -139,8 +140,11 @@ void loop_cycle(int *out)
 			printf("Error\nBad command \"%s\"\nExit!\n", arg[0]);
 			*out = -1;
 		}
-		printf("Executed\n");
-		usleep(2000000); //delay 2sec 
+		if(*out != -1)
+		{
+			printf("Executed\n");
+			usleep(2000000); //delay 2sec 
+		}
 		++i;
 	}
 	for(i=0; i<line_count; ++i)
