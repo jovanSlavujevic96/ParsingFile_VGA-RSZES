@@ -1,6 +1,5 @@
 #include "functions.h"
   
-#include <string.h>    
 #include <unistd.h>
 #include <sys/mman.h>
 #include <fcntl.h>
@@ -13,72 +12,7 @@
 #define RED 0xf800
 #define GREEN 0x07e0
 
-#define TextFilePath "/root/slavuj/RSZES_PrviZadatak/command.txt"
-
-bool checkCommands(char commands[6][100]);
-
-void loop_cycle(int *out)
-{
-	if(*out)
-		*out = 0;
-	
-	FILE *text_file;
-	int line_count;
-	text_file = fopen(TextFilePath, "r");
-	if(!text_file) 
-	{
-		printf("Could not open file %s\n",TextFilePath);
-		*out = -1;
-		return;
-	}
-	char **commands = read_lines(text_file, &line_count);
-	fclose(text_file);
-
-	int i=0;
-	while(i<line_count && *out != -1 )
-	{
-		char arg[6][100] = {{0}};	
-		int j,k, flag;
-		bool key[6] = {false};
-		for(j=0; j<strlen(commands[i])-1 ;++j)
-		{
-			if(!key[0] && commands[i][j] != 32)
-				arg[0][j] = commands[i][j];
-			else if(!key[0] && commands[i][j] == 32)
-			{
-				flag = j;
-				key[0] = true;
-			}
-			for(k=1; k<6; k++)
-			{
-				if(key[k-1] && !key[k] && flag != j && commands[i][j] != 32)
-					arg[k][j-flag-1] = commands[i][j];
-				else if(key[k-1] && !key[k] && flag != j && commands[i][j] == 32)
-				{
-					flag = j;
-					key[k] = true;
-				}
-			}	
-		}
-    
-		printf("[%d]: %s\n", i, commands[i]);
-    if(!checkCommands(arg))
-      *out = -1;
-    if(*out != -1)
-    {
-		  printf("Executed\n");
-		  usleep(2000000); //delay 2sec 
-    }
-    ++i;
-	}
-	
-	for(i=0; i<line_count; ++i)
-		free(commands[i]);
-	free(commands);
-	commands = NULL;	
-}
-
-bool checkCommands(char commands[6][100])
+bool checkAndExecute(char commands[6][100])
 { 
   int i,incr=0;
   for(i=0; i<6; ++i)
