@@ -15,6 +15,8 @@
 
 #define TextFilePath "/root/slavuj/RSZES_PrviZadatak/command.txt"
 
+bool checkCommands(char commands[6][100]);
+
 void loop_cycle(int *out)
 {
 	if(*out)
@@ -33,7 +35,7 @@ void loop_cycle(int *out)
 	fclose(text_file);
 
 	int i=0;
-	while(i<line_count )
+	while(i<line_count && *out != -1 )
 	{
 		char arg[6][100] = {{0}};	
 		int j,k, flag;
@@ -58,111 +60,71 @@ void loop_cycle(int *out)
 				}
 			}	
 		}
-		int color;
-		int bckgCmp = strcmp(arg[0], "BCKG:"),
-		lineHCmp = strcmp(arg[0], "LINE_H:"),
-		lineVCmp = strcmp(arg[0], "LINE_V:"),
-		rectCmp = strcmp(arg[0], "RECT:");
-	
+    
 		printf("[%d]: %s\n", i, commands[i]);
-
-		if(!bckgCmp)
-		{
-			color = retColor(arg[1]);
-			if(color == -1)
-			{
-				printf("Error\nThis is not a color you can choose: \"%s\"\nExit\n", arg[1]);
-				*out = -1;
-				break;
-			}
-			fillBgr(out, color);
-		}
-		else if(!lineHCmp)
-		{
-			for(j = 1; j <= 3; ++j)
-				if(!checkIfNumber(arg[j]) )
-				{
-					printf("Error\nThis is not a number: %s\nExit\n", arg[j]);
-					*out = -1;
-					break;
-				}
-			if(*out == -1)
-				break;
-			int x1 = atoi(arg[1]),
-			x2 = atoi(arg[2]),
-			y  = atoi(arg[3]);
-			color = retColor(arg[4]);
-			if(color == -1)
-			{
-				printf("Error\nThis is not a color you can choose: \"%s\"\nExit\n", arg[4]);
-				*out = -1;
-				break;
-			}
-			fillHorizLine(out, color, x1, x2, y);	
-		}
-		else if(!lineVCmp)
-		{
-			for(j = 1; j <= 3; ++j)
-				if(!checkIfNumber(arg[j]) )
-				{
-					printf("Error\nThis is not a number: %s\nExit\n", arg[j]);
-					*out = -1;
-					break;
-				}
-			if(*out == -1)
-				break;
-			int x = atoi(arg[1]),
-			y1 = atoi(arg[2]),
-			y2 = atoi(arg[3]);
-			color = retColor(arg[4]);
-			if(color == -1)
-			{
-				printf("Error\nThis is not a color you can choose: \"%s\"\nExit\n", arg[1]);
-				*out = -1;
-				break;
-			}
-			fillVertLine(out, color, x, y1, y2);
-		}
-		else if(!rectCmp)
-		{
-			for(j = 1; j <= 4; ++j)
-				if(!checkIfNumber(arg[j]) )
-				{
-					printf("Error\nThis is not a number: %s\nExit\n", arg[j]);
-					*out = -1;
-					break;
-				}
-			if(*out == -1)
-				break;
-			int x1 = atoi(arg[1]),
-			x2 = atoi(arg[2]),
-			y1 = atoi(arg[3]),
-			y2 = atoi(arg[4]);
-			color = retColor(arg[5]);
-			if(color == -1)
-			{
-				printf("Error\nThis is not a color you can choose: \"%s\"\nExit\n", arg[1]);
-				*out = -1;
-			}
-			fillRectangle(out, color, x1, x2, y1, y2);	
-		}
-		else
-		{
-			printf("Error\nBad command \"%s\"\nExit!\n", arg[0]);
-			*out = -1;
-		}
-		if(*out == -1)
-			break;
-
-		printf("Executed\n");
-		usleep(2000000); //delay 2sec 
-		++i;
+    if(!checkCommands(arg))
+      *out = -1;
+    if(*out != -1)
+    {
+		  printf("Executed\n");
+		  usleep(2000000); //delay 2sec 
+    }
+    ++i;
 	}
 	
 	for(i=0; i<line_count; ++i)
 		free(commands[i]);
 	free(commands);
 	commands = NULL;	
+}
+
+bool checkCommands(char commands[6][100])
+{ 
+  int i,incr=0;
+  for(i=0; i<6; ++i)
+    if(commands[i][0] != 0)
+      ++incr;
+    else
+      break;
+
+  if(!incr || incr == 1)
+  {
+    printf("Error.\nThere's no enough arguments");
+    return false;
+  }
+  int color = retColor(commands[incr-1]);
+  if(color == -1)
+  {
+      printf("Error.\nThere's no such a color\n");
+      return false;
+  }  
+  int bckCmp = strcmp(commands[0], "BCKG:"), HlineCmp= strcmp(commands[0], "LINE_H:"), VlineCmp = strcmp(commands[0], "LINE_V:"), rectCmp = strcmp(commands[0], "RECT:");
+  if(!bckCmp && incr == 2)
+    return( fillBgr(color) );
+  else if(!HlineCmp && incr == 5)
+  { 
+    if( !checkIfNumber(commands[1]) || !checkIfNumber(commands[2]) || !checkIfNumber(commands[3]) )
+      return false;
+    int x1 = atoi(commands[1]), x2 = atoi(commands[2]), y = atoi(commands[3]);
+    return (fillHorizLine(color, x1, x2, y) );
+  } 
+  else if(!VlineCmp && incr == 5)
+  {
+    if( !checkIfNumber(commands[1]) || !checkIfNumber(commands[2]) || !checkIfNumber(commands[3]) )
+      return false;
+    int x = atoi(commands[1]), y1 = atoi(commands[2]), y2 = atoi(commands[3]);
+    return (fillVertLine(color, x, y1, y2) );
+  }
+  else if(!rectCmp && incr == 6)
+  {
+    int x1 = atoi(commands[1]), x2 = atoi(commands[2]), y1 = atoi(commands[3]), y2 = atoi(commands[4]);
+    return (fillRectangle(color, x1, x2, y1, y2) );
+  }
+  else
+  {
+    printf("Error.\nBad command or not enough arguments\n");
+    return false;
+  } 
 }
 
 bool checkIfNumber(const char *num_str)
@@ -174,7 +136,8 @@ bool checkIfNumber(const char *num_str)
 	return true;
 }
 
-char** read_lines(FILE* txt, int* count) {
+char** read_lines(FILE* txt, int* count) 
+{
     char** array = NULL;        
     int    i;                   
     char   line[100];           
@@ -185,7 +148,7 @@ char** read_lines(FILE* txt, int* count) {
 
     line_count = 0;
     while (fgets(line, sizeof(line), txt) != NULL)                             		
-		line_count++;
+		  line_count++;
     
     rewind(txt);
 
@@ -194,7 +157,7 @@ char** read_lines(FILE* txt, int* count) {
         return NULL; 
     
     for (i = 0; i < line_count; i++) 
-	{    
+	  {    
         fgets(line, sizeof(line), txt);
         line_length = strlen(line);        
         line[line_length - 1] = '\0';
@@ -206,7 +169,7 @@ char** read_lines(FILE* txt, int* count) {
     return array;
 }
 
-void fillBgr(int *error, const int color)
+bool fillBgr(const int color)
 {
 	unsigned int vectorColor[480][640];
 	int i,j;
@@ -221,8 +184,7 @@ void fillBgr(int *error, const int color)
 	if (fd < 0)
 	{
 		printf("Cannot open /dev/vga for write\n");
-		*error = -1;
-		return; 
+		return false; 
 	}
 	p=(int*)mmap(0,640*480*4, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
 	memcpy(p, vectorColor, MAX_PKT_SIZE);
@@ -231,57 +193,68 @@ void fillBgr(int *error, const int color)
 	if (fd < 0)
 	{
 		printf("Cannot close /dev/vga for write\n");
-		*error = -1;
-		return; 
+		return false; 
 	}
+  return true;
 }
 
-void fillHorizLine(int *error, const int color, const int X1, const int X2, const int Y)
+bool fillHorizLine(const int color, const int X1, const int X2, const int Y)
 {
-	int x,y;
-	*error = 0;
+  int x,y;
+  if(X1 > X2)
+  {
+    printf("Error\nX1: %d is bigger than X2 : %d\nExit Program!\n", X1, X2);
+    return false;
+  }
 	FILE* fp;
 	y = Y;
 	for(x=X1; x<X2; ++x)
-		fill(error, x, y, color, fp);
+		if( !fill(x, y, color, fp) )
+      return false;
+  return true;
 }
 
-void fillVertLine(int *error, const int color, const int X, const int Y1, const int Y2)
+bool fillVertLine(const int color, const int X, const int Y1, const int Y2)
 {
-	int x,y;
-	*error = 0;
+	if(Y1 > Y2)
+  {
+    printf("Error\nY1: %d is bigger than Y2: %d\nExit Program!\n", Y1, Y2);
+    return false;
+  }
+  int x,y;
 	FILE* fp;
 	x = X;
 	for(y=Y1; y<Y2; ++y)
-		fill(error, x, y, color, fp);
+		if( !fill(x, y, color, fp) )
+      return false;
+  return true;
 }
 
-void fill(int *error, int x, int y, int color, FILE *fp)
+bool fill(int x, int y, int color, FILE *fp)
 {
 	fp = fopen("/dev/vga_dma", "w");		
 	if(fp == NULL)
 	{
 		printf("Cannot open /dev/vga for write\n");
-		*error = -1;
-		return;
+		return false;
 	}
 	fprintf(fp,"%d,%d,%#04x\n",x,y,color);
 	fclose(fp);
 	if(fp == NULL)
 	{
-		printf("Cannot close /dev/vga\n");
-		*error = -1;
-		return;
+    printf("Cannot close /dev/vga\n");
+		return false;
 	}
+  return true;
 }
 
 
-void fillRectangle(int *error, const int color, const int X1, const int X2, const int Y1, const int Y2)
+bool fillRectangle(const int color, const int X1, const int X2, const int Y1, const int Y2)
 {
-	fillVertLine(error, color, X1, Y1, Y2);
-	fillVertLine(error, color, X2, Y1, Y2);
-	fillHorizLine(error, color, X1, X2, Y1);
-	fillHorizLine(error, color, X1, X2, Y2);
+	if(!fillVertLine(color, X1, Y1, Y2) || !fillVertLine(color, X2, Y1, Y2) || 
+      !fillHorizLine(color, X1, X2, Y1) || !fillHorizLine(color, X1, X2, Y2) )
+    return false;
+  return true;
 }
 
 int retColor(const char *argument)
